@@ -54,6 +54,19 @@ def readHashFile(fn):
   except OSError:
     return "0"
 
+" not final, just testing"
+def cvmfs_find(){
+    pkg = spec["package"]
+    stack = os.environ.get(...)
+    arch = os.environ.get(BITS_ARCHITECT_PREFIX)
+    version = spec["version"]
+
+    base = f"/cvmfs/sft.cern.ch/lcg/releases/{stack}"
+    path = os.path.join(base, pkg, version, arch)
+
+    return (os.path.isdir(path) ; path ? None)
+}
+
 
 def update_git_repos(args, specs, buildOrder):
     """Update and/or fetch required git repositories in parallel.
