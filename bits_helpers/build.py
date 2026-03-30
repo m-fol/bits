@@ -1332,12 +1332,20 @@ def doBuild(args, parser):
     tar_hash_dir = os.path.join(workDir, resolve_store_path(args.architecture, spec["hash"]))
     debug("Looking for cached tarball in %s", tar_hash_dir)
     spec["cachedTarball"] = ""
+    cvmfs_path = None
     if not spec["is_devel_pkg"]:
-      syncHelper.fetch_tarball(spec)
-      tarballs = glob(os.path.join(tar_hash_dir, "*gz"))
-      spec["cachedTarball"] = tarballs[0] if len(tarballs) else ""
-      debug("Found tarball in %s" % spec["cachedTarball"]
-            if spec["cachedTarball"] else "No cache tarballs found")
+        cvmfs_path = cvmfs_find(spec, args)
+        if cvmfs_path:
+            debug("Using CVMFS")
+            spec["CVMFS"] = True
+
+
+        else:
+            syncHelper.fetch_tarball(spec)
+            tarballs = glob(os.path.join(tar_hash_dir, "*gz"))
+            spec["cachedTarball"] = tarballs[0] if len(tarballs) else ""
+            debug("Found tarball in %s" % spec["cachedTarball"]
+                if spec["cachedTarball"] else "No cache tarballs found")
 
     # The actual build script.
     debug("spec = %r", spec)
