@@ -55,16 +55,18 @@ def readHashFile(fn):
     return "0"
 
 " not final, just testing"
-def cvmfs_find(){
+def cvmfs_find(spec, args){
     pkg = spec["package"]
-    stack = os.environ.get(...)
-    arch = os.environ.get(BITS_ARCHITECT_PREFIX)
+    stack = args.defaults[0]
+    arch = args.architecture
     version = spec["version"]
 
     base = f"/cvmfs/sft.cern.ch/lcg/releases/{stack}"
     path = os.path.join(base, pkg, version, arch)
+    
+    echo f"Current Path: {path}"
 
-    return (os.path.isdir(path) ; path ? None)
+    return (os.path.isdir(path) ? path : None)
 }
 
 
