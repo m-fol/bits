@@ -1342,7 +1342,7 @@ def doBuild(args, parser):
             debug("Using CVMFS")
             spec["CVMFS"] = True
             spec["cvmfs_path_dir"] = cvmfs_path_dir
-            install_path = os.path.join(workDir, args.architecture, spec["package"],spec["version"], "-", spec["revisions"])
+            install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revisions']}")
 
             os.makedirs(os.path.dirname(install_path), exist_ok=True)
             if not os.path.exists(install_path): 
