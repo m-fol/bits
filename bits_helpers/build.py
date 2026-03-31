@@ -1332,14 +1332,18 @@ def doBuild(args, parser):
     tar_hash_dir = os.path.join(workDir, resolve_store_path(args.architecture, spec["hash"]))
     debug("Looking for cached tarball in %s", tar_hash_dir)
     spec["cachedTarball"] = ""
-    cvmfs_path = None
+    cvmfs_path_dir = None
     if not spec["is_devel_pkg"]:
-        cvmfs_path = cvmfs_find(spec, args)
+        cvmfs_path_dir = cvmfs_find(spec, args)
         if cvmfs_path:
             debug("Using CVMFS")
             spec["CVMFS"] = True
+            spec["cvmfs_path_dir"] = cvmfs_path_dir
+            install_path = os.path.join(workDir, args.architecture, spec["package"],spec["version"], "-", spec["revisions"])
 
-
+            os.makedirs(os.path.dirname(install_path), exist_ok=True)
+            if not os.path.exists(install_path): 
+                os.symlink(cvmfs_path_dir, install_path)
         else:
             syncHelper.fetch_tarball(spec)
             tarballs = glob(os.path.join(tar_hash_dir, "*gz"))
