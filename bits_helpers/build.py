@@ -1289,6 +1289,9 @@ def doBuild(args, parser):
       # If we get here, we know we are in sync with whatever remote store.  We
       # can therefore create a directory which contains all the packages which
       # were used to compile this one.
+      if spec["CVMFS"]:
+          debug(f"SKIP - Sourcing PKG {spec['package']} from CMVFS")
+          continue
       debug("Package %s was correctly compiled. Moving to next one.", spec["package"])
       # If using incremental builds, next time we execute the script we need to remove
       # the placeholders which avoid rebuilds.
