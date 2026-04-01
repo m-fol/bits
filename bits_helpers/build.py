@@ -55,7 +55,7 @@ def readHashFile(fn):
     return "0"
 
 " not final, just testing"
-def cvmfs_find(spec, args){
+def cvmfs_find(spec, args):
     pkg = spec["package"]
     stack = args.defaults[0]
     arch = args.architecture
@@ -64,10 +64,10 @@ def cvmfs_find(spec, args){
     base = f"/cvmfs/sft.cern.ch/lcg/releases/{stack}"
     path = os.path.join(base, pkg, version, arch)
     
-    echo f"Current Path: {path}"
-
-    return (os.path.isdir(path) ? path : None)
-}
+    debug("Current Path: {path}")
+    if os.path.isdir(path):
+        return path
+    return None
 
 
 def update_git_repos(args, specs, buildOrder):
@@ -432,6 +432,7 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
             version=quote(d_spec[dep]["version"]),
             revision=quote(d_spec[dep]["revision"]),
         )
+
         continue
 
 
