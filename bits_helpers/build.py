@@ -416,23 +416,28 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
   
   for dep in spec.get("requires", ()):
     d_spec = specs[dep]
+    bigpackage=dep.upper().replace("-", "_")
+
 
     if d_spec.get("CVMFS"):
         pathdir = d_spec["cvmfs_path_dir"]
-        lines.extend(('export {bigpackage}_ROOT="{pathdir}"',
+        lines = ['export {bigpackage}_ROOT="{pathdir}"',
             'export {bigpackage}_VERSION="{version}"',
             'export {bigpackage}_REVISION="{d_spec["revision"]}"',
-            'export PATH="{pathdir}/bin"',
-            'export LD_LIBRARY_PATH="{pathdir}/lib"',
-            'export LD_LIBRARY_PATH="{pathdir}/lib64"',
-            'export CMAKE_PREFIX_PATH="{pathdir}"'
-        ).format(
-            bigpackage=dep.upper().replace("-", "_"),
-            package=quote(d_spec[dep]["package"]),
-            version=quote(d_spec[dep]["version"]),
-            revision=quote(d_spec[dep]["revision"]),
-        )
-
+            'export PATH="{pathdir}/bin:$PATH"',
+            'export LD_LIBRARY_PATH="{pathdir}/lib:$LD_LIBRARY_PATH"',
+            'export LD_LIBRARY_PATH="{pathdir}/lib64:$LD_LIBRARY_PATH"',
+            'export CMAKE_PREFIX_PATH="{pathdir}:$CMAKE_PREFIX_PATH"'
+        ]
+        form = [
+            f.format.(    
+                bigpackage=bigpackage,
+                pathdir=pathdir,
+                version=quote(d_spec[dep]["version"]),
+                revision=quote(d_spec[dep]["revision"]),
+            )
+        ]
+        lines.extend(form)
         continue
 
 
