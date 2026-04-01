@@ -442,7 +442,7 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
 
     lines.extend((
        '[ -n "${{{bigpackage}_REVISION}}" ] || '
-       '. "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh'
+       '[ . "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh ]'
     ).format(
        bigpackage=dep.upper().replace("-", "_"),
        package=quote(specs[dep]["package"]),
@@ -1098,6 +1098,24 @@ def doBuild(args, parser):
   while buildOrder:
     p = buildOrder.pop(0)
     spec = specs[p]
+
+    cvmfs_path_dir = None
+    if not spec["is_devel_pkg"]:
+        cvmfs_path_dir = cvmfs_find(spec, args)
+        if cvmfs_path_dir:
+            debug("Using CVMFS")
+            spec["CVMFS"] = True
+            spec["cvmfs_path_dir"] = cvmfs_path_dir
+            install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revision']}")
+
+            os.makedirs(os.path.dirname(install_path), exist_ok=True)
+            if not os.path.exists(install_path):
+                os.symlink(cvmfs_path_dir, install_path)
+
+    if spec["CVMFS"]:
+        debug(f"SKIP - Sourcing PKG {spec['package']} from CMVFS")
+        continue
+
     log_current_package(p, mainPackage, specs, getattr(args, "develPrefix", None))
 
     # Calculate the hashes. We do this in build order so that we can guarantee
@@ -1319,9 +1337,6 @@ def doBuild(args, parser):
       # If we get here, we know we are in sync with whatever remote store.  We
       # can therefore create a directory which contains all the packages which
       # were used to compile this one.
-      if spec["CVMFS"]:
-          debug(f"SKIP - Sourcing PKG {spec['package']} from CMVFS")
-          continue
       debug("Package %s was correctly compiled. Moving to next one.", spec["package"])
       # If using incremental builds, next time we execute the script we need to remove
       # the placeholders which avoid rebuilds.
@@ -1361,28 +1376,16 @@ def doBuild(args, parser):
     # shutil.rmtree under Python 2 fails when hashFile is unicode and the
     # directory contains files with non-ASCII names, e.g. Golang/Boost.
     shutil.rmtree(dirname(hashFile).encode("utf-8"), True)
-
+   
     tar_hash_dir = os.path.join(workDir, resolve_store_path(args.architecture, spec["hash"]))
     debug("Looking for cached tarball in %s", tar_hash_dir)
     spec["cachedTarball"] = ""
-    cvmfs_path_dir = None
     if not spec["is_devel_pkg"]:
-        cvmfs_path_dir = cvmfs_find(spec, args)
-        if cvmfs_path_dir:
-            debug("Using CVMFS")
-            spec["CVMFS"] = True
-            spec["cvmfs_path_dir"] = cvmfs_path_dir
-            install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revision']}")
-
-            os.makedirs(os.path.dirname(install_path), exist_ok=True)
-            if not os.path.exists(install_path): 
-                os.symlink(cvmfs_path_dir, install_path)
-        else:
-            syncHelper.fetch_tarball(spec)
-            tarballs = glob(os.path.join(tar_hash_dir, "*gz"))
-            spec["cachedTarball"] = tarballs[0] if len(tarballs) else ""
-            debug("Found tarball in %s" % spec["cachedTarball"]
-                if spec["cachedTarball"] else "No cache tarballs found")
+        syncHelper.fetch_tarball(spec)
+        tarballs = glob(os.path.join(tar_hash_dir, "*gz"))
+        spec["cachedTarball"] = tarballs[0] if len(tarballs) else ""
+        debug("Found tarball in %s" % spec["cachedTarball"]
+            if spec["cachedTarball"] else "No cache tarballs found")
 
     # The actual build script.
     debug("spec = %r", spec)
@@ -1393,6 +1396,7 @@ def doBuild(args, parser):
 
     container_workDir = ""
     cachedTarball = spec["cachedTarball"]
+
     if args.docker:
       container_workDir = "/container/bits/sw" if not args.containerUseWorkDir else workDir
       if not args.containerUseWorkDir:
