@@ -64,7 +64,7 @@ def cvmfs_find(spec, args):
     base = f"/cvmfs/sft.cern.ch/lcg/releases/{stack}"
     path = os.path.join(base, pkg, version, arch)
     
-    debug("Current Path: {path}")
+    debug(f"Current Path: {path}")
     if os.path.isdir(path):
         return path
     return None
@@ -421,23 +421,22 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
 
     if d_spec.get("CVMFS"):
         pathdir = d_spec["cvmfs_path_dir"]
-        lines = ['export {bigpackage}_ROOT="{pathdir}"',
+        cvmfs_lines = ['export {bigpackage}_ROOT="{pathdir}"',
             'export {bigpackage}_VERSION="{version}"',
-            'export {bigpackage}_REVISION="{d_spec["revision"]}"',
+            'export {bigpackage}_REVISION="{revision}"',
             'export PATH="{pathdir}/bin:$PATH"',
             'export LD_LIBRARY_PATH="{pathdir}/lib:$LD_LIBRARY_PATH"',
             'export LD_LIBRARY_PATH="{pathdir}/lib64:$LD_LIBRARY_PATH"',
             'export CMAKE_PREFIX_PATH="{pathdir}:$CMAKE_PREFIX_PATH"'
         ]
-        form = [
-            f.format.(    
+        lines.extend([
+            f.format(    
                 bigpackage=bigpackage,
                 pathdir=pathdir,
-                version=quote(d_spec[dep]["version"]),
-                revision=quote(d_spec[dep]["revision"]),
-            )
-        ]
-        lines.extend(form)
+                version=quote(d_spec["version"]),
+                revision=quote(d_spec["revision"]),
+            ) for f in cvmfs_lines
+        ])
         continue
 
 
@@ -1368,11 +1367,11 @@ def doBuild(args, parser):
     cvmfs_path_dir = None
     if not spec["is_devel_pkg"]:
         cvmfs_path_dir = cvmfs_find(spec, args)
-        if cvmfs_path:
+        if cvmfs_path_dir:
             debug("Using CVMFS")
             spec["CVMFS"] = True
             spec["cvmfs_path_dir"] = cvmfs_path_dir
-            install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revisions']}")
+            install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revision']}")
 
             os.makedirs(os.path.dirname(install_path), exist_ok=True)
             if not os.path.exists(install_path): 
