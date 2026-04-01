@@ -449,6 +449,7 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
        version=quote(specs[dep]["version"]),
        revision=quote(specs[dep]["revision"]),
     )
+    )
 
   
   if post_build:
