@@ -1099,6 +1099,7 @@ def doBuild(args, parser):
     p = buildOrder.pop(0)
     spec = specs[p]
 
+    spec["CVMFS"] = False
     cvmfs_path_dir = None
     if not spec["is_devel_pkg"]:
         cvmfs_path_dir = cvmfs_find(spec, args)
@@ -1113,7 +1114,7 @@ def doBuild(args, parser):
                 os.symlink(cvmfs_path_dir, install_path)
 
     if spec["CVMFS"]:
-        debug(f"SKIP - Sourcing PKG {spec['package']} from CMVFS")
+        debug(f"SKIP - Sourcing PKG {package} from CMVFS")
         continue
 
     log_current_package(p, mainPackage, specs, getattr(args, "develPrefix", None))
