@@ -406,22 +406,46 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
     '    WORK_DIR=%s' % abspath(workDir),
     'fi',
   ])
+
   # Generate the part which sources the environment for all the dependencies.
   # We guarantee that a dependency is always sourced before the parts
   # depending on it, but we do not guarantee anything for the order in which
   # unrelated components are activated.
   # These variables are also required during the build itself, so always
   # generate them.
-  lines.extend((
-    '[ -n "${{{bigpackage}_REVISION}}" ] || '
-    '. "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh'
-  ).format(
-    bigpackage=dep.upper().replace("-", "_"),
-    package=quote(specs[dep]["package"]),
-    version=quote(specs[dep]["version"]),
-    revision=quote(specs[dep]["revision"]),
-  ) for dep in spec.get("requires", ()))
+  
+  for dep in spec.get("requires", ()):
+    d_spec = specs[dep]
 
+    if d_spec.get("CVMFS"):
+        pathdir = d_spec["cvmfs_path_dir"]
+        lines.extend(('export {bigpackage}_ROOT="{pathdir}"',
+            'export {bigpackage}_VERSION="{version}"',
+            'export {bigpackage}_REVISION="{d_spec["revision"]}"',
+            'export PATH="{pathdir}/bin"',
+            'export LD_LIBRARY_PATH="{pathdir}/lib"',
+            'export LD_LIBRARY_PATH="{pathdir}/lib64"',
+            'export CMAKE_PREFIX_PATH="{pathdir}"'
+        ).format(
+            bigpackage=dep.upper().replace("-", "_"),
+            package=quote(d_spec[dep]["package"]),
+            version=quote(d_spec[dep]["version"]),
+            revision=quote(d_spec[dep]["revision"]),
+        )
+        continue
+
+
+    lines.extend((
+       '[ -n "${{{bigpackage}_REVISION}}" ] || '
+       '. "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh'
+    ).format(
+       bigpackage=dep.upper().replace("-", "_"),
+       package=quote(specs[dep]["package"]),
+       version=quote(specs[dep]["version"]),
+       revision=quote(specs[dep]["revision"]),
+    )
+
+  
   if post_build:
     bigpackage = package.upper().replace("-", "_")
 
