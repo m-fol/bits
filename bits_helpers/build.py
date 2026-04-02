@@ -61,8 +61,8 @@ def cvmfs_find(spec, args):
     arch = args.architecture
     version = spec["version"]
 
-    base = f"/cvmfs/sft.cern.ch/lcg/releases/{stack}"
-    path = os.path.join(base, pkg, version, arch)
+    base = f"/cvmfs/sft-nightlies-test.cern.ch/lcg/bits/{arch}/Packages"
+    path = os.path.join(base, pkg, version)
     
     debug(f"Current Path: {path}")
     if os.path.isdir(path):
