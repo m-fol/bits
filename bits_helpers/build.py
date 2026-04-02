@@ -1095,6 +1095,7 @@ def doBuild(args, parser):
     from bits_helpers.log import logger
     scheduler = Scheduler(args.builders, logDelegate=logger, buildStats=args.resources)
 
+  cvmfs_fetch_pkg = []
   while buildOrder:
     p = buildOrder.pop(0)
     spec = specs[p]
@@ -1115,7 +1116,8 @@ def doBuild(args, parser):
                 os.symlink(cvmfs_path_dir, install_path)
 
     if spec["CVMFS"]:
-        debug(f"SKIP - Sourcing PKG {p} from CMVFS")
+        print(f"SKIP - Sourcing PKG {p} from CMVFS")
+        cvmfs_fetch_pkg.append(f"{p}(v{spec['version']})")
         continue
 
     log_current_package(p, mainPackage, specs, getattr(args, "develPrefix", None))
@@ -1680,5 +1682,11 @@ def doBuild(args, parser):
   if untrackedFilesDirectories:
     banner("Untracked files in the following directories resulted in a rebuild of "
            "the associated package and its dependencies:\n%s\n\nPlease commit or remove them to avoid useless rebuilds.", "\n".join(untrackedFilesDirectories))
+  if cvmfs_fetch_pkg:
+      banner("CVMFS SUMMARY:\n"
+              "The following packages were fetched from CVMFS.\n"
+              "No compilation or downloading for:\n\n"
+              " - " + "\n - ".join(cvmfs_fetch_pkg)
+              )
   debug("Everything done")
 
