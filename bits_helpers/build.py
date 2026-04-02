@@ -442,7 +442,7 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
 
     lines.extend((
        '[ -n "${{{bigpackage}_REVISION}}" ] || '
-       '[ . "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh ]'
+       ' . "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh'
     ).format(
        bigpackage=dep.upper().replace("-", "_"),
        package=quote(specs[dep]["package"]),
