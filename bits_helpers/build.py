@@ -440,7 +440,7 @@ def generate_initdotsh(package, specs, architecture, workDir="sw", post_build=Fa
         continue
 
 
-    lines.extend((
+    lines.append((
        '[ -n "${{{bigpackage}_REVISION}}" ] || '
        ' . "$WORK_DIR/$BITS_ARCH_PREFIX"/{package}/{version}-{revision}/etc/profile.d/init.sh'
     ).format(
@@ -1107,6 +1107,7 @@ def doBuild(args, parser):
             debug("Using CVMFS")
             spec["CVMFS"] = True
             spec["cvmfs_path_dir"] = cvmfs_path_dir
+            spec["revision"] = spec.get("revision", "1")
             install_path = os.path.join(workDir, args.architecture, spec["package"],f"{spec['version']}-{spec['revision']}")
 
             os.makedirs(os.path.dirname(install_path), exist_ok=True)
@@ -1114,7 +1115,7 @@ def doBuild(args, parser):
                 os.symlink(cvmfs_path_dir, install_path)
 
     if spec["CVMFS"]:
-        debug(f"SKIP - Sourcing PKG {package} from CMVFS")
+        debug(f"SKIP - Sourcing PKG {p} from CMVFS")
         continue
 
     log_current_package(p, mainPackage, specs, getattr(args, "develPrefix", None))
