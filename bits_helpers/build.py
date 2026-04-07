@@ -55,16 +55,6 @@ def readHashFile(fn):
   except OSError:
     return "0"
 
-
-def platfind():
-    try:
-        with open("/etc/os-release") as f:
-            c = f.read()
-            m = re.search(r'VERSION_ID=["\']?(\d)', c)
-            return f"el{m.group(1)}"
-    except (AttributeError, KeyError):
-        return "ERR"
-
 def compfind():
     c = subprocess.check_output(['gcc', '-dumpversion'], text=True).strip()
     return c.split('.')[0]
@@ -73,26 +63,30 @@ def compfind():
 def cvmfs_find(spec, args):
     pkg = spec["package"]
     stack = args.defaults[0]
-    compiler = os.environ.get('COMPILER', 'gcc')
+    compiler = args.defaults[1] if len(args.defaults) >=2 else os.environ.get('COMPILER', 'gcc')
     ver = os.environ.get('COMPILER_VERSION', '') if os.environ.get('COMPILER_VERSION') else compfind()
-    buildmode = os.environ.get('COMPILER_MODE', 'opt')
+    buildmode = args.defaults[2] if len(args.defaults) >=3 else os.environ.get('COMPILER_MODE', 'opt')
     arch = "x86_64" if "x86-64" in args.architecture else args.architecture
-    version = spec["version"]
     internal_OS = "unset"
 
-    if platfind() == "alma9":
+    if "slc9" in args.architecture:
         internal_OS = "el9"
-    elif platfind() == "alma10":
+    elif "slc10" in args.architecture:
         internal_OS = "el10"
 
     base = f"/cvmfs/sft-nightlies-test.cern.ch/lcg/bits/{arch}-{internal_OS}-{compiler}{ver}-{buildmode}/Packages"   
 
-    for n in [pkg, pkg.lower()]:
-      path = os.path.join(base, pkg, version)
-      banner(f"Current Path: {path}")
-      if os.path.isdir(path):
-        banner(f"FOUND CVMFS PATH: {path}")
-        return path
+    if os.path.isdir(os.path.join(base, pkg)):  
+       version = next(v for v in os.listdir(os.path.join(base, pkg)) if spec["version"] in v or v in spec["version"])
+    else:
+       version = spec["version"]
+
+
+    path = os.path.join(base, pkg, version)
+    banner(f"Checking Current Path... -> {path}")
+    if os.path.isdir(path):
+      banner(f"[!] Found CVMFS path : {path}")
+      return path
     return None
 
 
@@ -1140,15 +1134,24 @@ def doBuild(args, parser):
 
             os.makedirs(os.path.dirname(install_path), exist_ok=True)
             if os.path.lexists(install_path):
-                os.path.islink(install_path)
-            else:
-                shutil.rmtree(install_path)
+                try:
+                   if os.path.islink(install_path) or os.path.isfile(install_path):
+                     os.unlink(install_path)
+                   else:
+                     shutil.rmtree(install_path)
+                except FileNotFoundError:
+                   pass
+                except Exception as e:
+                   subprocess.call(['rm', '-rf', install_path])
                 
             os.symlink(cvmfs_path_dir, install_path)
-
-            call_ignoring_oserrors(symlink, f"{spec['version']}-{spec['revision']}", join(workDir, args.architecture, spec["package"], "latest"))
+  
+            latest_path = join(workDir, args.architecture, spec["package"], "latest")
             
-            banner(f"=====> SKIP - Sourcing PKG {p} from CMVFS")
+
+            call_ignoring_oserrors(symlink, f"{spec['version']}-{spec['revision']}", latest_path)
+            
+            banner(f"Sourcing PKG [{p}] from CMVFS") 
             cvmfs_fetch_pkg.append(f"{p}(v{spec['version']})")
             continue
 
