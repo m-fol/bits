@@ -778,6 +778,7 @@ def doBuild(args, parser):
   syncHelper = remote_from_url(args.remoteStore, args.writeStore, args.architecture,
                                args.workDir, getattr(args, "insecure", False))
 
+  mainBuildFamily = "_".join(args.defaults)
   packages = args.pkgname
   specs = {}
   buildOrder = []
