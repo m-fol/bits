@@ -56,7 +56,7 @@ def readHashFile(fn):
     return "0"
 
 def compfind():
-    c = subprocess.check_output(['gcc', '-dumpversion'], text=True).strip()
+    c = subprocess.check_output(['gcc', '-dumpversion'], text=True).strip() if sys.version_info >= (3, 7) else subprocess.check_output(['gcc', '-dumpversion'], universal_newlines=True).strip()
     return c.split('.')[0]
 
 " not final, just testing"
