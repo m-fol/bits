@@ -75,14 +75,24 @@ def cvmfs_find(spec, args):
         internal_OS = "el10"
 
     base = f"/cvmfs/sft-nightlies-test.cern.ch/lcg/bits/{arch}-{internal_OS}-{compiler}{ver}-{buildmode}/Packages"   
+    pkg_dir = os.path.join(base, pkg)
+    if not os.path.isdir(pkg_dir): return None
+    targ_version = spec["version"].lstrip('v')
+    targC = targ_version.split('-')[0]
+    c = os.listdir(pkg_dir)
+    m = None
+    banner(f"[CVMFS] Searching for {pkg} version target: {targ_version} or {targC}")
+    for ca in sorted(c, key=len, reverse=True):
+        cc = ca.lstrip('v')
+        if (cc == targC or cc.startswith(targC) or targC.startswith(cc)):
+            path = os.path.join(pkg_dir, ca)
+            if os.path.isdir(path):
+                m = ca
+                break
+    if not m: return None
 
-    if os.path.isdir(os.path.join(base, pkg)):  
-       version = next(v for v in os.listdir(os.path.join(base, pkg)) if spec["version"] in v or v in spec["version"])
-    else:
-       version = spec["version"]
+    path = os.path.join(pkg_dir, m)
 
-
-    path = os.path.join(base, pkg, version)
     banner(f"Checking Current Path... -> {path}")
     if os.path.isdir(path):
       banner(f"[!] Found CVMFS path : {path}")
