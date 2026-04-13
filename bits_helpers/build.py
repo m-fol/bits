@@ -1157,7 +1157,7 @@ def doBuild(args, parser):
                 
             os.symlink(cvmfs_path_dir, install_path)
   
-            latest_path = join(workDir, args.architecture, spec["package"], "latest")
+            latest_path = join(workDir, args.architecture, spec["package"], "latest-release")
             
 
             call_ignoring_oserrors(symlink, f"{spec['version']}-{spec['revision']}", latest_path)
