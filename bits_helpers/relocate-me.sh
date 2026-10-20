@@ -20,6 +20,7 @@ if [[ -s ${THISDIR}/etc/profile.d/.bits-relocate ]] ; then
   # once, so an INSTALL_BASE that contains PKG_DIR is not rewritten again.
   _pp_strip=""
   [ -n "${BITS_RELOCATE_STRIP_PP:-}" ] && _pp_strip="s|${PKG_DIR}/INSTALLROOT/$PH/$PP|${PKG_DIR}|g;"
+  [ -n "${BITS_RELOCATE_STRIP_LOCAL_PP:-}" ] && _pp_strip="${_pp_strip}s|${PKG_DIR}/$PP\([^-A-Za-z0-9._+]\)|${PKG_DIR}\1|g;s|${PKG_DIR}/$PP\$|${PKG_DIR}|;"
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     sed -i.unrelocated -e "${_pp_strip}s|${PKG_DIR}/INSTALLROOT/$PH|${PKG_DIR}|g;s|${PKG_DIR}|$INSTALL_BASE|g" "${THISDIR}/$f"

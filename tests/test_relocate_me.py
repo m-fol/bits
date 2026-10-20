@@ -16,7 +16,7 @@ PH, PP = "abc123", "x86_64/mypkg/1.0-1"
 
 
 class RelocateMeTest(unittest.TestCase):
-  def _relocate(self, pkg_dir, install_base, strip_pp):
+  def _relocate(self, pkg_dir, install_base, strip_pp, local_pp=False):
     root = tempfile.mkdtemp()
     self.addCleanup(shutil.rmtree, root, True)
     os.makedirs(os.path.join(root, "etc", "profile.d"))
@@ -30,8 +30,11 @@ class RelocateMeTest(unittest.TestCase):
               % (pkg_dir, PH, PP, pkg_dir, PH, pkg_dir, PP))
     env = dict(os.environ, INSTALL_BASE=install_base)
     env.pop("BITS_RELOCATE_STRIP_PP", None)
+    env.pop("BITS_RELOCATE_STRIP_LOCAL_PP", None)
     if strip_pp:
       env["BITS_RELOCATE_STRIP_PP"] = "1"
+    if local_pp:
+      env["BITS_RELOCATE_STRIP_LOCAL_PP"] = "1"
     subprocess.run(["bash", os.path.join(root, "relocate-me.sh")], env=env, check=True)
     with open(os.path.join(root, "paths.txt")) as f:
       return f.read().split()
@@ -44,6 +47,11 @@ class RelocateMeTest(unittest.TestCase):
     self.assertEqual(self._relocate("/w/sw", "/cvmfs/r/pkg/1.0", True),
                      ["/cvmfs/r/pkg/1.0/lib", "/cvmfs/r/pkg/1.0/other/lib",
                       "/cvmfs/r/pkg/1.0/%s/bin" % PP])
+
+  def test_publish_of_a_local_install_strips_its_package_path(self):
+    self.assertEqual(self._relocate("/w/sw", "/cvmfs/r/pkg/1.0", True, local_pp=True),
+                     ["/cvmfs/r/pkg/1.0/lib", "/cvmfs/r/pkg/1.0/other/lib",
+                      "/cvmfs/r/pkg/1.0/bin"])
 
   def test_install_base_containing_pkg_dir_is_not_rewritten_again(self):
     self.assertEqual(self._relocate("/w/sw", "/w/sw/stage/pkg/1.0", True),
