@@ -899,18 +899,19 @@ def doPublish(args, parser):
     # ------------------------------------------------------------------
     # 2. Copy INSTALLROOT → working copy (INSTALLROOT is never touched)
     # ------------------------------------------------------------------
+    rel_pp = os.path.relpath(installroot, work_dir)
     if scratch_dir:
         os.makedirs(scratch_dir, exist_ok=True)
-        copy_dir = join(scratch_dir, pkg_id)
-        if exists(copy_dir):
-            shutil.rmtree(copy_dir)
-        os.makedirs(copy_dir)
+        stage_dir = join(scratch_dir, pkg_id)
+        if exists(stage_dir):
+            shutil.rmtree(stage_dir)
     else:
         # Use a temp dir that auto-cleans on abnormal exit; we remove it
         # explicitly on success.
         _tmpparent = tempfile.mkdtemp(prefix="bits-cvmfs-")
-        copy_dir   = join(_tmpparent, pkg_id)
-        os.makedirs(copy_dir)
+        stage_dir  = join(_tmpparent, pkg_id)
+    copy_dir = join(stage_dir, rel_pp)
+    os.makedirs(copy_dir)
 
     info("working copy: %s", copy_dir)
 
@@ -929,10 +930,12 @@ def doPublish(args, parser):
         # 3. Relocate working copy to final CVMFS target path.
         # ------------------------------------------------------------------
         info("Relocating to %s …", cvmfs_target)
-        env = {**os.environ, "INSTALL_BASE": cvmfs_target}
+        env = {**os.environ, "INSTALL_BASE": cvmfs_target,
+               "WORK_DIR": stage_dir, "BITS_RELOCATE_STRIP_PP": "1",
+               "BITS_RELOCATE_STRIP_LOCAL_PP": "1"}
         result = subprocess.run(
-            ["bash", "-e", relocate_script],
-            cwd=copy_dir,
+            ["bash", "-e", join(rel_pp, "relocate-me.sh")],
+            cwd=stage_dir,
             env=env,
             check=False,
         )
@@ -977,7 +980,7 @@ def doPublish(args, parser):
             info("No modulefiles under %s; nothing to publish to module tree.", module_dir)
     finally:
         info("Cleaning up working copy …")
-        shutil.rmtree(copy_dir, ignore_errors=True)
+        shutil.rmtree(stage_dir, ignore_errors=True)
         if not scratch_dir:
             shutil.rmtree(_tmpparent, ignore_errors=True)
     return True
